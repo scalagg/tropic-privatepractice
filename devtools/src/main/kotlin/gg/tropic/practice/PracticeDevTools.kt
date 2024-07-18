@@ -1,7 +1,9 @@
 package gg.tropic.practice
 
 import gg.scala.commons.ExtendedScalaPlugin
+import gg.scala.commons.annotations.container.ContainerPreEnable
 import gg.scala.commons.core.plugin.*
+import kotlin.properties.Delegates
 
 /**
  * @author GrowlyX
@@ -16,12 +18,25 @@ import gg.scala.commons.core.plugin.*
 @PluginDependencyComposite(
     PluginDependency("scala-commons"),
     PluginDependency("Lemon"),
+    PluginDependency("WorldEdit"),
     PluginDependency("ScBasics", soft = true)
 )
 class PracticeDevTools : ExtendedScalaPlugin()
 {
+    companion object
+    {
+        @JvmStatic
+        var instance by Delegates.notNull<PracticeDevTools>()
+    }
+
     init
     {
         PracticeShared
+    }
+
+    @ContainerPreEnable
+    fun preEnable()
+    {
+        instance = this
     }
 }

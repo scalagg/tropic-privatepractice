@@ -5,5 +5,6 @@ repositories {
 
 dependencies {
     api(project(":shared"))
+    compileOnly(fileTree("worldedit"))
     compileOnly("com.grinderwolf:slimeworldmanager-plugin:2.2.1")
 }

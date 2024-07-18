@@ -9,6 +9,7 @@ import gg.scala.commons.annotations.commands.customizer.CommandManagerCustomizer
 import gg.scala.commons.command.ScalaCommand
 import gg.scala.commons.command.ScalaCommandManager
 import gg.scala.commons.issuer.ScalaPlayer
+import gg.tropic.practice.editor.Editor
 import gg.tropic.practice.services.GameManagerService
 import gg.tropic.practice.map.Map
 import gg.tropic.practice.map.MapManageServices
@@ -46,6 +47,14 @@ object MapManageCommands : ScalaCommand()
         manager.commandCompletions.registerAsyncCompletion("slime-templates") {
             MapManageServices.loader.listWorlds()
         }
+    }
+
+    @Subcommand("editor")
+    @Description("Enter the best map editor!")
+    fun onEditor(player: ScalaPlayer)
+    {
+        player.sendMessage("${CC.GOLD}Entering the editor...")
+        Editor(player.bukkit()).initialize()
     }
 
     @Subcommand("create")
