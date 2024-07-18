@@ -477,7 +477,7 @@ object GameService
 
                         game.multiRoundGame.roundNumber += 1
                         Tasks.delayed(1L) {
-                            game.startNewRound(game.getOpponent(team)!!)
+                            game.startNewRound(team)
                         }
                         return
                     }
