@@ -1,6 +1,9 @@
 package gg.tropic.practice.resources
 
+import gg.scala.basics.plugin.profile.BasicsProfileService
+import gg.scala.basics.plugin.settings.defaults.values.StateSettingValue
 import gg.tropic.practice.games.GameService
+import gg.tropic.practice.settings.DuelsSettingCategory
 import gg.tropic.practice.settings.isASilentSpectator
 import net.evilblock.cubed.visibility.VisibilityAction
 import net.evilblock.cubed.visibility.VisibilityAdapter
