@@ -9,9 +9,7 @@ import gg.tropic.practice.utilities.toRBTeamSide
 import me.lucko.helper.Helper
 import me.lucko.helper.Schedulers
 import me.lucko.helper.scheduler.Task
-import net.evilblock.cubed.nametag.NametagHandler
 import net.evilblock.cubed.util.CC
-import net.evilblock.cubed.visibility.VisibilityHandler
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
@@ -65,6 +63,7 @@ class RoundStartTask(
         game.toBukkitPlayers().filterNotNull()
             .forEach { player ->
                 // enter a "light" spectator mode, where they can't interact with anything yet
+                game.teleportToSpawnLocation(player)
                 game.prepareForNewLife(player)
 
                 player.setMetadata(
@@ -117,9 +116,6 @@ class RoundStartTask(
                 .forEach {
                     it.removeMetadata("spectator", Helper.hostPlugin())
                     it.removeMetadata("light-spectator", Helper.hostPlugin())
-
-                    VisibilityHandler.update(it)
-                    NametagHandler.reloadPlayer(it)
                 }
 
             game.audiences {
