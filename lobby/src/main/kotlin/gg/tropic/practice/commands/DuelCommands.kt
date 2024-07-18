@@ -4,7 +4,6 @@ import gg.scala.basics.plugin.settings.defaults.values.StateSettingValue
 import gg.scala.commons.acf.ConditionFailedException
 import gg.scala.commons.acf.annotation.CommandAlias
 import gg.scala.commons.acf.annotation.CommandCompletion
-import gg.scala.commons.acf.annotation.Optional
 import gg.scala.commons.annotations.commands.AutoRegister
 import gg.scala.commons.annotations.commands.HighPriority
 import gg.scala.commons.command.ScalaCommand
@@ -20,12 +19,9 @@ import gg.tropic.practice.menu.pipeline.DuelRequestPipeline
 import gg.tropic.practice.player.LobbyPlayerService
 import gg.tropic.practice.player.PlayerState
 import gg.tropic.practice.queue.QueueService
-import gg.tropic.practice.region.PlayerRegionFromRedisProxy
-import gg.tropic.practice.region.Region
 import gg.tropic.practice.settings.DuelsSettingCategory
 import gg.tropic.practice.suffixWhenDev
 import net.evilblock.cubed.util.CC
-import java.util.*
 
 /**
  * @author GrowlyX
@@ -91,8 +87,7 @@ object DuelCommands : ScalaCommand()
     @CommandAlias("duel|d|fight|sendduelrequest")
     fun onDuelRequest(
         player: ScalaPlayer,
-        target: AsyncLemonPlayer,
-        @Optional kit: Kit?
+        target: AsyncLemonPlayer
     ) = target.validatePlayers(
         player.bukkit(), false
     ) {
@@ -153,19 +148,6 @@ object DuelCommands : ScalaCommand()
             throw ConditionFailedException(
                 "${CC.YELLOW}${it.name}${CC.RED} is not on a practice lobby!"
             )
-        }
-
-        if (kit != null)
-        {
-            DuelRequestPipeline.automateDuelRequestWithMapSelectUI(
-                player = player.bukkit(),
-                target = it.uniqueId,
-                kit = kit,
-                region = PlayerRegionFromRedisProxy
-                    .of(player.bukkit())
-                    .join()
-            )
-            return@validatePlayers
         }
 
         DuelRequestPipeline
