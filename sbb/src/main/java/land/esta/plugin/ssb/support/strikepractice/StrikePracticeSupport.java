@@ -6,9 +6,9 @@ import land.esta.plugin.ssb.support.PluginSupport;
 
 @Getter
 @Setter
-public class EstaPracticeSupport extends PluginSupport {
+public class StrikePracticeSupport extends PluginSupport {
 
-    public EstaPracticeSupport(String name) {
+    public StrikePracticeSupport(String name) {
         super(name);
     }
 

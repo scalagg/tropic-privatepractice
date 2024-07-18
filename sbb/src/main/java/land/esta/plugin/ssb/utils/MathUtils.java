@@ -7,10 +7,11 @@ import org.bukkit.block.Block;
 import org.bukkit.util.Vector;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Getter
 public class MathUtils {
+    public static Random random = new Random();
+
     public static Vector getDirection(float yaw) {
         Vector vector = new Vector();
         double rotY = (double) 0;
@@ -116,7 +117,7 @@ public class MathUtils {
         max = max * 100;
 
         for(int i = (int) min; i <=max; i++) {
-            double getRandomValue = ((int) (ThreadLocalRandom.current().nextDouble() * (max - min)) + min) / 100;
+            double getRandomValue = ((int) (random.nextDouble() * (max - min)) + min) / 100;
             return getRandomValue;
         }
         return 0;

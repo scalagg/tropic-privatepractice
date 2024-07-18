@@ -27,7 +27,6 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Getter
 @Setter
@@ -456,7 +455,7 @@ public class InventoryManager extends Manager {
         bot.getViewsManager().getPlayers().forEach(player -> {
             Sound sound = Sound.EAT;
             if (drink) sound = Sound.DRINK;
-            Random random = ThreadLocalRandom.current();
+            Random random = new Random();
             Location loc = bot.getMovements().getLocation();
 
             if (drink) player.playSound(bot.getMovements().getLocation(), sound,0.5F, random.nextFloat() * 0.1F + 0.9F);

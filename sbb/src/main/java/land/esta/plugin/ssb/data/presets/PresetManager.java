@@ -1,5 +1,9 @@
 package land.esta.plugin.ssb.data.presets;
 
+import ga.strikepractice.StrikePractice;
+import ga.strikepractice.battlekit.BattleKit;
+import ga.strikepractice.fights.botduel.BotDuel;
+import ga.strikepractice.npc.CitizensNPC;
 import lombok.Getter;
 import land.esta.plugin.ssb.bots.setting.SettingManager;
 import land.esta.plugin.ssb.utils.Color;
@@ -44,12 +48,15 @@ public class PresetManager {
     }
 
     public DataPresets getDataPresets(PresetType type) {
-        return switch (type) {
-            case UNRANKED -> unranked;
-            case RANKED -> ranked;
-            case TOURNAMENT -> tournament;
-            default -> null;
-        };
+        switch (type) {
+            case UNRANKED:
+                return unranked;
+            case RANKED:
+                return ranked;
+            case TOURNAMENT:
+                return tournament;
+        }
+        return null;
     }
 
     public SettingManager getPresetSetting(PresetType type, String name) {

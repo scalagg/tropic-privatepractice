@@ -9,7 +9,6 @@ import land.esta.plugin.ssb.SmartBotsBackend;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class WTapFeature extends Feature {
 
@@ -18,7 +17,8 @@ public class WTapFeature extends Feature {
         if (event instanceof BotAttackLandEvent) {
             BotAttackLandEvent e = (BotAttackLandEvent) event;
             Bot bot = e.bot;
-            int random = (ThreadLocalRandom.current().nextInt(100));
+            Random r = new Random();
+            int random = (r.nextInt(100));
             WTapSetting wTapSetting = bot.getSettingManager().getWTapSetting();
 
             bot.getMovements().setAttackSprint(false);

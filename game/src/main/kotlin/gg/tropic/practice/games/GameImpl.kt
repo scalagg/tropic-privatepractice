@@ -55,10 +55,10 @@ import java.util.logging.Logger
  * @author GrowlyX
  * @since 8/4/2022
  */
-open class GameImpl(
+class GameImpl(
     expectation: GameExpectation,
-    kit: Kit,
     teams: Map<GameTeamSide, GameTeam> = expectation.teams,
+    kit: Kit,
     var state: GameState = GameState.Waiting,
     private val mapId: String = expectation.mapId
 ) : AbstractGame(expectation, teams, kit), CompositeTerminable by CompositeTerminable.create()
