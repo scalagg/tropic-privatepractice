@@ -11,11 +11,14 @@ import java.util.List;
 
 @Getter
 public class PresetManager {
+
+    private final List<DataPresets> dataList;
     private final DataPresets unranked;
     private final DataPresets ranked;
     private final DataPresets tournament;
 
     public PresetManager() {
+        dataList = new ArrayList<>();
         unranked = registerData("unranked", PresetType.UNRANKED);
         ranked = registerData("ranked", PresetType.RANKED);
         tournament = registerData("tournament", PresetType.TOURNAMENT);
