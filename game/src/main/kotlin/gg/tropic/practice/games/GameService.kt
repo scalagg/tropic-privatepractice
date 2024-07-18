@@ -25,7 +25,6 @@ import gg.tropic.game.extensions.cosmetics.messagebundles.cosmetics.MessageBundl
 import gg.tropic.practice.PracticeGame
 import gg.tropic.practice.games.features.FireballFeature
 import gg.tropic.practice.games.tasks.lifecycle.PlayerRespawnTask.Companion.startDelayedRespawn
-import gg.tropic.practice.games.tasks.lifecycle.RoundStartTask.Companion.startNewRound
 import gg.tropic.practice.games.team.GameTeamSide
 import gg.tropic.practice.kit.feature.FeatureFlag
 import gg.tropic.practice.kit.feature.GameLifecycle
@@ -33,13 +32,11 @@ import gg.tropic.practice.profile.PracticeProfileService
 import gg.tropic.practice.services.GameManagerService
 import gg.tropic.practice.settings.DuelsSettingCategory
 import gg.tropic.practice.suffixWhenDev
-import gg.tropic.practice.utilities.toRBTeamSide
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap
 import me.lucko.helper.Events
 import me.lucko.helper.Schedulers
 import net.evilblock.cubed.nametag.NametagHandler
 import net.evilblock.cubed.util.CC
-import net.evilblock.cubed.util.bukkit.Constants
 import net.evilblock.cubed.util.bukkit.Constants.HEART_SYMBOL
 import net.evilblock.cubed.util.bukkit.EventUtils
 import net.evilblock.cubed.util.bukkit.Tasks
@@ -67,7 +64,6 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import java.util.*
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.min
 
 
@@ -280,9 +276,7 @@ object GameService
         data class GameRemovalEvent(
             val drops: MutableList<ItemStack>,
             val shouldRespawn: Boolean = true,
-            val killerPlayerOverride: Player? = null,
-            val alternativeDeath: Boolean = false,
-            val alternativeDeathMethod: String = "",
+            val killerPlayerOverride: Player? = null
         )
 
         fun Player.gracefullyRemoveFromGame(event: GameRemovalEvent)
@@ -346,20 +340,10 @@ object GameService
                 game.getTeamOf(killerPlayer)
             }
 
-            val killerName = if (game.flag(FeatureFlag.RedBlueTeams))
-                killer?.side?.toRBTeamSide()?.format(killerPlayer?.name ?: "???") ?: "???"
-            else "${CC.GREEN}${killerPlayer?.name ?: "???"}"
-
-            val killedName = if (game.flag(FeatureFlag.RedBlueTeams))
-                team.side.toRBTeamSide().format(name) ?: "???"
-            else "${CC.RED}$name"
-
-            val deathMessage = "${CC.RED}$killedName${CC.GRAY} ${
-                if (event.alternativeDeath && killerPlayer == null) "fell into the void" else "was ${
-                    if (killerPlayer == null || killerPlayer == this) "killed" else "${
-                        getMessageBundlePhrase(killerPlayer as Player)
-                    } by ${CC.GREEN}$killerName${CC.GRAY}"
-                }"
+            val deathMessage = "${CC.RED}$name${CC.GRAY} was ${
+                if (killerPlayer == null || killerPlayer == this) "killed" else "${
+                    getMessageBundlePhrase(killerPlayer as Player)
+                } by ${CC.GREEN}${killerPlayer.name}${CC.GRAY}"
             }!"
 
             if (killerPlayer is Player)
@@ -424,23 +408,10 @@ object GameService
                 }
                 GameLifecycle.RoundBound ->
                 {
-                    if (
-                        (game.flag(FeatureFlag.StartNewRoundOnDeath) && !event.alternativeDeath) ||
-                        (event.alternativeDeath && game.flag(FeatureFlag.StartNewRoundOnPortalEnter))
-                    )
+                    if (game.flag(FeatureFlag.StartNewRoundOnDeath))
                     {
-                        val requiredRounds = game
-                            .flagMetaData(FeatureFlag.RoundsRequiredToCompleteGame, "value")
-                            ?.toIntOrNull() ?: 2
-
-                        if (team.gameLifecycleArbitraryObjectiveProgress >= requiredRounds)
-                        {
-                            game.complete(team)
-                            return
-                        }
-
                         game.multiRoundGame.roundNumber += 1
-                        game.startNewRound(team)
+                        // TODO: write the task for this
                         return
                     }
 
@@ -1124,11 +1095,7 @@ object GameService
                     )
                     ?.toBooleanStrictOrNull()
 
-                if (game.flag(FeatureFlag.WinWhenNHitsReached))
-                {
-                    damagerTeam.gameLifecycleArbitraryObjectiveProgress += 1
-                }
-
+                damagerTeam.gameLifecycleArbitraryObjectiveProgress += 1
                 damagerTeam.playerCombos.compute(
                     it.damager!!.uniqueId
                 ) { _, previous ->
@@ -1142,39 +1109,6 @@ object GameService
                     }
 
                     computed
-                }
-
-                if (game.flag(FeatureFlag.HeartsBelowNameTag))
-                {
-                    audiences.player(it.damager as Player).apply {
-                        sendActionBar {
-                            Component.text { text ->
-                                val entityPlayer = it.entity as Player
-                                text.append(Component.text(entityPlayer.name)
-                                    .color(NamedTextColor.YELLOW))
-
-                                val hearts = entityPlayer.health / 2.0
-                                val fullHearts = floor(hearts).toInt()
-
-                                repeat(fullHearts) {
-                                    text.append(Component.text(HEART_SYMBOL)
-                                        .color(NamedTextColor.DARK_RED))
-                                }
-
-                                if (hearts % 1 == 0.5)
-                                {
-                                    text.append(Component.text(HEART_SYMBOL)
-                                        .color(NamedTextColor.RED))
-                                }
-
-                                val usedHearts = floor((entityPlayer.maxHealth - entityPlayer.health) / 2.0)
-                                repeat(usedHearts.toInt()) {
-                                    text.append(Component.text(HEART_SYMBOL)
-                                        .color(NamedTextColor.GRAY))
-                                }
-                            }
-                        }
-                    }
                 }
 
                 game
