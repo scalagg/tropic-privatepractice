@@ -127,6 +127,16 @@ enum class FeatureFlag(
             GameLifecycle.ObjectivePlusSoulBound
         )
     ),
+
+    FrozenOnRoundStart(
+        // game start freeze is implied with round start
+        incompatibleWith = { setOf(FrozenOnGameStart) },
+        availableLifecycles = setOf(
+            GameLifecycle.RoundBound,
+            GameLifecycle.ObjectivePlusSoulBound,
+            GameLifecycle.ObjectiveBound
+        )
+    ),
     StartNewRoundOnPortalEnter(
         incompatibleWith = { setOf(StartNewRoundOnDeath) },
         availableLifecycles = setOf(

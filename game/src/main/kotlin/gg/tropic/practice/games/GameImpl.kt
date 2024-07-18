@@ -41,7 +41,6 @@ import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.World
-import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
@@ -729,26 +728,5 @@ class GameImpl(
         toPlayers().forEach {
             playerCounters[it] = Counter(it)
         }
-    }
-
-    fun cleanupWorld()
-    {
-        if (placedBlocks.isNotEmpty())
-        {
-            placedBlocks.forEach {
-                arenaWorld
-                    ?.getBlockAt(it.toLocation(arenaWorld))
-                    ?.apply {
-                        state.type = Material.AIR
-                        state.update()
-                    }
-            }
-        }
-
-        arenaWorld?.entities
-            ?.filterIsInstance<Item>()
-            ?.onEach {
-                it.remove()
-            }
     }
 }

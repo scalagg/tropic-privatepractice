@@ -717,12 +717,6 @@ object GameService
                 val game = byPlayer(it.player)
                     ?: return@handler
 
-                if (it.player.hasMetadata("light-spectator"))
-                {
-                    it.player.teleport(it.from)
-                    return@handler
-                }
-
                 if (it.player.hasMetadata("spectator"))
                 {
                     return@handler
@@ -764,9 +758,15 @@ object GameService
                     return@handler
                 }
 
+                if (game.multiRoundGame.switchingRounds)
+                {
+                    it.player.teleport(it.from)
+                    return@handler
+                }
+
                 if (
                     game.state(GameState.Starting) &&
-                    (game.flag(FeatureFlag.FrozenOnGameStart))
+                    (game.flag(FeatureFlag.FrozenOnGameStart) || game.flag(FeatureFlag.FrozenOnRoundStart))
                 )
                 {
                     it.player.teleport(it.from)
