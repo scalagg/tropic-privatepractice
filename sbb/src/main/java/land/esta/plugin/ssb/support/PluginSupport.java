@@ -19,7 +19,7 @@ public class PluginSupport implements Listener {
     }
 
     public PluginSupport enable() {
-        Bukkit.getLogger().info("Added support for " + name);
+        Bukkit.getLogger().info(Color.code("&f"+ SmartBotsBackend.getInstance().getPluginName()+" added support for &c&l" + name));
         return this;
     }
 }

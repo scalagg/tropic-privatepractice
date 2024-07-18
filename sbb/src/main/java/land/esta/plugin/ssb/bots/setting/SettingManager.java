@@ -547,34 +547,75 @@ public class SettingManager {
 
     public void setBotName(UUID uuid, String botName) {
         this.botName = botName;
-        SmartBotsBackend.getInstance().getMongoHandler().updateValue(uuid, "botName", botName);
+
+        if (!SmartBotsBackend.getInstance().getMongo().isEnabled()) {
+            //Config updating
+            FileManager.update(ConfigManager.data, foundPath + ".BotName", botName);
+        } else {
+            //SQl updating
+            SmartBotsBackend.getInstance().getMongoHandler().updateValue(uuid, "botName", botName);
+        }
     }
 
     public void setBotName(String difficulty, String botName) {
         this.botName = botName;
 
-        SmartBotsBackend.getInstance().getMongoHandler().updateValue(difficulty, "botName", botName);
+        if (!SmartBotsBackend.getInstance().getMongo().isEnabled()) {
+            //Config updating
+            FileManager.update(ConfigManager.data, foundPath + ".BotName", botName);
+        } else {
+            //SQl updating
+            SmartBotsBackend.getInstance().getMongoHandler().updateValue(difficulty, "botName", botName);
+        }
     }
 
     public void setBotName(PresetType presetType, String botName) {
         this.botName = botName;
-        SmartBotsBackend.getInstance().getMongoHandler().updateValue(presetType, name, "botName", botName);
+
+        if (!SmartBotsBackend.getInstance().getMongo().isEnabled()) {
+            //Config updating
+            FileManager.update(ConfigManager.data, foundPath + ".BotName", botName);
+        } else {
+            //SQl updating
+            SmartBotsBackend.getInstance().getMongoHandler().updateValue(presetType, name, "botName", botName);
+        }
     }
 
     //We also want to update to config in those 2 methods
     public void setSkin(UUID uuid, String skin) {
         this.skin = skin;
-        SmartBotsBackend.getInstance().getMongoHandler().updateValue(uuid, "botSkin", skin);
+
+        if (!SmartBotsBackend.getInstance().getMongo().isEnabled()) {
+            //Config updating
+            FileManager.update(ConfigManager.data, foundPath + ".BotSkin", skin);
+        } else {
+            //SQl updating
+            SmartBotsBackend.getInstance().getMongoHandler().updateValue(uuid, "botSkin", skin);
+        }
     }
 
     public void setSkin(String difficulty, String skin) {
         this.skin = skin;
-        SmartBotsBackend.getInstance().getMongoHandler().updateValue(difficulty, "botSkin", skin);
+
+        if (!SmartBotsBackend.getInstance().getMongo().isEnabled()) {
+            //Config updating
+            FileManager.update(ConfigManager.data, foundPath + ".BotSkin", skin);
+        } else {
+            //SQl updating
+            SmartBotsBackend.getInstance().getMongoHandler().updateValue(difficulty, "botSkin", skin);
+        }
     }
 
     public void setSkin(PresetType presetType, String skin) {
         this.skin = skin;
-        SmartBotsBackend.getInstance().getMongoHandler().updateValue(presetType, name, "botSkin", skin);
+
+        if (!SmartBotsBackend.getInstance().getMongo().isEnabled()) {
+            //Config updating
+            FileManager.update(ConfigManager.data, foundPath + ".BotSkin", skin);
+        } else {
+            //SQl updating
+            SmartBotsBackend.getInstance().getMongoHandler().updateValue(presetType, name, "botSkin", skin);
+        }
     }
 
     public void setGameRandomizer(boolean gameRandomizer) {
