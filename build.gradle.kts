@@ -31,11 +31,8 @@ subprojects {
     dependencies {
         compileOnly(kotlin("stdlib"))
 
-        if (project.name == "sbb") {
-            annotationProcessor("gg.scala.commons:bukkit:3.5.2")
-        } else {
-            kapt("gg.scala.commons:bukkit:3.5.2")
-        }
+        kapt("gg.scala.commons:bukkit:3.5.2")
+        annotationProcessor("gg.scala.commons:bukkit:3.5.2")
         compileOnly("gg.scala.commons:bukkit:3.5.2")
 
         compileOnly("gg.scala.cgs:parties:1.4.3")
