@@ -32,7 +32,6 @@ subprojects {
         compileOnly(kotlin("stdlib"))
 
         kapt("gg.scala.commons:bukkit:3.5.2")
-        annotationProcessor("gg.scala.commons:bukkit:3.5.2")
         compileOnly("gg.scala.commons:bukkit:3.5.2")
 
         compileOnly("gg.scala.cgs:parties:1.4.3")
@@ -45,10 +44,6 @@ subprojects {
 
         compileOnly("gg.scala.lemon:bukkit:1.7.0")
         compileOnly("gg.scala.cloudsync:spigot:1.0.1")
-    }
-
-    kapt {
-        keepJavacAnnotationProcessors = true
     }
 
     tasks.withType<JavaCompile> {
