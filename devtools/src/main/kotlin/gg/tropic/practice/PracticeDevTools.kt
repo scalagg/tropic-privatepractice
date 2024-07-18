@@ -1,8 +1,10 @@
 package gg.tropic.practice
 
 import gg.scala.commons.ExtendedScalaPlugin
+import gg.scala.commons.annotations.container.ContainerDisable
 import gg.scala.commons.annotations.container.ContainerPreEnable
 import gg.scala.commons.core.plugin.*
+import org.bukkit.Bukkit
 import kotlin.properties.Delegates
 
 /**
@@ -38,5 +40,21 @@ class PracticeDevTools : ExtendedScalaPlugin()
     fun preEnable()
     {
         instance = this
+    }
+
+    @ContainerDisable
+    fun containerDisable()
+    {
+        Bukkit.getWorlds()
+            .filter { it.name.startsWith("editor") }
+            .forEach {
+                Bukkit.unloadWorld(it, false)
+            }
+
+        Bukkit.getWorldContainer().listFiles()
+            ?.filter { it.name.startsWith("editor") }
+            ?.forEach {
+                it.deleteRecursively()
+            }
     }
 }

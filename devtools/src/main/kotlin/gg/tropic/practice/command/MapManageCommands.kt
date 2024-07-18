@@ -49,14 +49,6 @@ object MapManageCommands : ScalaCommand()
         }
     }
 
-    @Subcommand("editor")
-    @Description("Enter the best map editor!")
-    fun onEditor(player: ScalaPlayer)
-    {
-        player.sendMessage("${CC.GOLD}Entering the editor...")
-        Editor(player.bukkit()).initialize()
-    }
-
     @Subcommand("create")
     @CommandCompletion("@slime-templates")
     @Description("Creates a new map on a new Slime world template.")

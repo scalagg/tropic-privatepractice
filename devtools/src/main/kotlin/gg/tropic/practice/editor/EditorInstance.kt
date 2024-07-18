@@ -23,6 +23,13 @@ data class EditorInstance(
             }
 
             Bukkit.unloadWorld(world, false)
+
+            File(
+                Bukkit.getWorldContainer(),
+                world.name
+            ).apply {
+                deleteRecursively()
+            }
         }
     }
 }

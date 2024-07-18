@@ -14,13 +14,11 @@ import net.evilblock.cubed.util.bukkit.Constants
 import net.evilblock.cubed.util.bukkit.ItemBuilder
 import net.evilblock.cubed.util.bukkit.prompt.InputPrompt
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.Sound
+import org.bukkit.*
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerQuitEvent
 import java.io.File
+import java.util.UUID
 
 /**
  * @author GrowlyX
@@ -28,6 +26,11 @@ import java.io.File
  */
 class Editor(private val player: Player) : CompositeTerminable by CompositeTerminable.create()
 {
+    companion object
+    {
+        val instances = mutableMapOf<UUID, Editor>()
+    }
+
     private val containers = Containers()
     private val editorID = "editor-${player.uniqueId}"
 
@@ -50,6 +53,12 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             }
             .bindWith(this)
 
+        instances[player.uniqueId] = this
+
+        with {
+            instances.remove(player.uniqueId)
+        }
+
         Schedulers
             .sync()
             .runRepeating({ _ ->
@@ -69,6 +78,7 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             .bindWith(this)
 
         populateInventoryHotbar()
+        visit(schematics.first())
     }
 
     fun visit(schematic: File)
@@ -77,22 +87,23 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
 
         val newWorld = EditorGenerator.createNewEmptyWorld()
         WorldEditUtils.paste(
-            newWorld, schematic, Vector(0, 62, 0)
+            newWorld, schematic, Vector(0, 32, 0)
         )
 
         val instance = EditorInstance(schematic, newWorld)
         instance.bindWith(this)
 
+        player.gameMode = GameMode.CREATIVE
         player.allowFlight = true
         player.isFlying = true
+        player.teleport(
+            Location(
+                newWorld, 0.0, 64.0, 0.0, -65.0f, 0.0f
+            )
+        )
 
         player.sendMessage("${CC.GREEN}Visiting ${CC.WHITE}${schematic.nameWithoutExtension}${CC.GREEN}...")
         player.playSound(player.location, Sound.NOTE_PLING, 1.0f, 1.0f)
-        player.teleport(
-            Location(
-                newWorld, 0.0, 64.0, 0.0
-            )
-        )
 
         visiting = instance
         previousInstance?.closeAndReportException()
@@ -190,28 +201,36 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                 InputPrompt()
                     .withText("${CC.B_GOLD}Enter a Slime world name!")
                     .acceptInput { _, newWorldName ->
-                        player.sendMessage("${CC.GOLD}Preparing world...")
-                        player.teleport(
-                            Location(
-                                Bukkit.getWorld("world"),
-                                0.0, 100.0, 0.0
+                        runCatching {
+                            player.sendMessage("${CC.GOLD}Preparing world...")
+                            player.teleport(
+                                Location(
+                                    Bukkit.getWorld("world"),
+                                    0.0, 100.0, 0.0
+                                )
                             )
-                        )
 
-                        val worldName = visiting!!.world.name
-                        Bukkit.unloadWorld(visiting!!.world, true)
+                            val worldName = visiting!!.world.name
+                            Bukkit.unloadWorld(visiting!!.world, true)
 
-                        player.sendMessage("${CC.GREEN}Importing into SWM -> MongoDB...")
-                        MapManageServices.slimePlugin.importWorld(
-                            File(Bukkit.getWorldContainer(), worldName),
-                            newWorldName,
-                            MapManageServices.loader
-                        )
+                            player.sendMessage("${CC.GREEN}Importing into SWM -> MongoDB...")
+                            MapManageServices.slimePlugin.importWorld(
+                                File(Bukkit.getWorldContainer(), worldName),
+                                newWorldName,
+                                MapManageServices.loader
+                            )
 
-                        player.playSound(player.location, Sound.LEVEL_UP, 1.0f, 1.0f)
-                        player.sendMessage("${CC.GREEN}Imported! You are no longer visiting.")
+                            player.playSound(player.location, Sound.LEVEL_UP, 1.0f, 1.0f)
+                            player.sendMessage("${CC.GREEN}Imported!")
 
-                        visiting?.closeAndReportException()
+                            visiting?.closeAndReportException()
+                            if (visiting != null)
+                            {
+                                visit(visiting!!.schematic)
+                            }
+                        }.onFailure {
+                            it.printStackTrace()
+                        }
                     }
                     .start(player)
             }
@@ -226,6 +245,9 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
 
     override fun close()
     {
+        player.inventory.clear()
+        player.updateInventory()
+
         HotbarPresetHandler.forget(editorID)
     }
 }
