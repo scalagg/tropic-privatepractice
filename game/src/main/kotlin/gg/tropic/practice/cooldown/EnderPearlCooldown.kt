@@ -101,10 +101,11 @@ object EnderPearlCooldown : PlayerStaticCooldown(
                 val game = GameService.byPlayer(player)
                     ?: return@handler
 
-                if (!game.ensurePlaying() || player.hasMetadata("light-spectator"))
+                if (!game.ensurePlaying())
                 {
                     it.isCancelled = true
                     player.updateInventory()
+
                     player.sendMessage("${CC.RED}You cannot throw enderpearls right now!")
                     return@handler
                 }

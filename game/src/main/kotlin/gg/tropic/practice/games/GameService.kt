@@ -1321,13 +1321,6 @@ object GameService
                         it.isCancelled = true
                     }
 
-                if (it.player.hasMetadata("light-spectator"))
-                {
-                    it.isCancelled = true
-                    it.player.sendMessage("${CC.RED}You cannot do this yet!")
-                    return@handler
-                }
-
                 if (it.player.hasMetadata("spectator"))
                 {
                     it.isCancelled = true
