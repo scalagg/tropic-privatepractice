@@ -39,6 +39,7 @@ import me.lucko.helper.Events
 import me.lucko.helper.Schedulers
 import net.evilblock.cubed.nametag.NametagHandler
 import net.evilblock.cubed.util.CC
+import net.evilblock.cubed.util.bukkit.Constants
 import net.evilblock.cubed.util.bukkit.Constants.HEART_SYMBOL
 import net.evilblock.cubed.util.bukkit.EventUtils
 import net.evilblock.cubed.util.bukkit.Tasks
@@ -193,42 +194,6 @@ object GameService
                         )
                     }
             )
-        }
-
-        fun Player.sendHealthHUD(damaged: Player)
-        {
-            audiences.player(this).apply {
-                sendActionBar {
-                    Component.text { text ->
-                        text.append(Component.text("${damaged.name} ")
-                            .color(NamedTextColor.YELLOW))
-
-                        val hearts = damaged.health / 2.0
-                        val fullHearts = floor(hearts).toInt()
-
-                        repeat(fullHearts) {
-                            text.append(Component.text(HEART_SYMBOL)
-                                .color(NamedTextColor.DARK_RED))
-                        }
-
-                        if (hearts.toInt().toDouble() != hearts)
-                        {
-                            text.append(Component.text(HEART_SYMBOL)
-                                .color(NamedTextColor.RED))
-                        } else
-                        {
-                            text.append(Component.text(HEART_SYMBOL)
-                                .color(NamedTextColor.GRAY))
-                        }
-
-                        val usedHearts = floor((damaged.maxHealth - damaged.health) / 2.0)
-                        repeat(usedHearts.toInt()) {
-                            text.append(Component.text(HEART_SYMBOL)
-                                .color(NamedTextColor.GRAY))
-                        }
-                    }
-                }
-            }
         }
 
         fun Player.killedBy(): Entity?
@@ -460,7 +425,7 @@ object GameService
                 GameLifecycle.RoundBound ->
                 {
                     if (
-                        (game.flag(FeatureFlag.StartNewRoundOnDeath)) ||
+                        (game.flag(FeatureFlag.StartNewRoundOnDeath) && !event.alternativeDeath) ||
                         (event.alternativeDeath && game.flag(FeatureFlag.StartNewRoundOnPortalEnter))
                     )
                     {
@@ -468,7 +433,7 @@ object GameService
                             .flagMetaData(FeatureFlag.RoundsRequiredToCompleteGame, "value")
                             ?.toIntOrNull() ?: 2
 
-                        if (team.gameLifecycleArbitraryObjectiveProgress + 1 >= requiredRounds)
+                        if (team.gameLifecycleArbitraryObjectiveProgress >= requiredRounds)
                         {
                             game.complete(team)
                             return
@@ -1038,7 +1003,6 @@ object GameService
 
                         if (health > 0.0)
                         {
-                            shooter.sendHealthHUD(entity)
                             shooter.sendMessage("${entity.displayName}${CC.GREEN} is now at ${CC.RED}$health${HEART_SYMBOL}${CC.GREEN}!")
                         }
                     }
@@ -1182,7 +1146,35 @@ object GameService
 
                 if (game.flag(FeatureFlag.HeartsBelowNameTag))
                 {
-                    (it.damager as Player).sendHealthHUD(it.entity as Player)
+                    audiences.player(it.damager as Player).apply {
+                        sendActionBar {
+                            Component.text { text ->
+                                val entityPlayer = it.entity as Player
+                                text.append(Component.text(entityPlayer.name)
+                                    .color(NamedTextColor.YELLOW))
+
+                                val hearts = entityPlayer.health / 2.0
+                                val fullHearts = floor(hearts).toInt()
+
+                                repeat(fullHearts) {
+                                    text.append(Component.text(HEART_SYMBOL)
+                                        .color(NamedTextColor.DARK_RED))
+                                }
+
+                                if (hearts % 1 == 0.5)
+                                {
+                                    text.append(Component.text(HEART_SYMBOL)
+                                        .color(NamedTextColor.RED))
+                                }
+
+                                val usedHearts = floor((entityPlayer.maxHealth - entityPlayer.health) / 2.0)
+                                repeat(usedHearts.toInt()) {
+                                    text.append(Component.text(HEART_SYMBOL)
+                                        .color(NamedTextColor.GRAY))
+                                }
+                            }
+                        }
+                    }
                 }
 
                 game

@@ -41,7 +41,7 @@ object DuelsNametagImpl : NametagProvider("practice", Int.MAX_VALUE)
                     prefix = playerGame.getTeamOf(toRefresh)
                         .side
                         .toRBTeamSide()
-                        .color,
+                        .display,
                     suffix = ""
                 )
             }

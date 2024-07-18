@@ -15,7 +15,6 @@ import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import net.kyori.adventure.title.Title
-import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue
@@ -59,28 +58,16 @@ class RoundStartTask(
         game.multiRoundGame.switchingRounds = true
         winner.gameLifecycleArbitraryObjectiveProgress += 1
 
-        if (game.placedBlocks.isNotEmpty())
-        {
-            game.placedBlocks.forEach {
-                game.arenaWorld
-                    ?.getBlockAt(it.toLocation(game.arenaWorld))
-                    ?.apply {
-                        state.type = Material.AIR
-                        state.update()
-                    }
-            }
-        }
-
         game.toBukkitPlayers().filterNotNull()
             .forEach { player ->
                 // enter a "light" spectator mode, where they can't interact with anything yet
-                game.teleportToSpawnLocation(player)
-                game.prepareForNewLife(player)
-
                 player.setMetadata(
                     "spectator",
                     FixedMetadataValue(Helper.hostPlugin(), "light")
                 )
+
+                game.teleportToSpawnLocation(player)
+                game.prepareForNewLife(player)
             }
 
         val winnerDisplay = if (winner.players.size == 1)
