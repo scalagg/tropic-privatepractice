@@ -10,7 +10,7 @@ plugins {
 }
 
 allprojects {
-    group = "land.esta.practice"
+    group = "gg.tropic.practice"
     version = "1.0.0"
 
     repositories {
@@ -65,7 +65,7 @@ subprojects {
             )
 
             archiveFileName.set(
-                "EstaPractice-${project.name}.jar"
+                "TropicPractice-${project.name}.jar"
             )
         }
 
