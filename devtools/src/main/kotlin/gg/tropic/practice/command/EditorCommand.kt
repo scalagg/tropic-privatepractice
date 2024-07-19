@@ -45,6 +45,8 @@ object EditorCommand : ScalaCommand()
         }
 
         Editor.instances[player.uniqueId]?.closeAndReportException()
+        Editor.instances.remove(player.uniqueId)
+
         player.sendMessage("${CC.RED}Left editor.")
     }
 }

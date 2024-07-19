@@ -2,9 +2,13 @@ package gg.tropic.practice
 
 import gg.scala.commons.ExtendedScalaPlugin
 import gg.scala.commons.annotations.container.ContainerDisable
+import gg.scala.commons.annotations.container.ContainerEnable
 import gg.scala.commons.annotations.container.ContainerPreEnable
 import gg.scala.commons.core.plugin.*
+import me.lucko.helper.Events
 import org.bukkit.Bukkit
+import org.bukkit.entity.EntityType
+import org.bukkit.event.entity.EntitySpawnEvent
 import kotlin.properties.Delegates
 
 /**
@@ -40,6 +44,22 @@ class PracticeDevTools : ExtendedScalaPlugin()
     fun preEnable()
     {
         instance = this
+    }
+
+    @ContainerEnable
+    fun containerEnable()
+    {
+        Events
+            .subscribe(EntitySpawnEvent::class.java)
+            .handler {
+                if (it.entityType != EntityType.PLAYER)
+                {
+                    return@handler
+                }
+
+                it.isCancelled = true
+            }
+            .bindWith(this)
     }
 
     @ContainerDisable

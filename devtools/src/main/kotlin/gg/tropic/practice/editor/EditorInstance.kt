@@ -1,6 +1,6 @@
 package gg.tropic.practice.editor
 
-import me.lucko.helper.terminable.composite.CompositeTerminable
+import me.lucko.helper.terminable.Terminable
 import org.bukkit.Bukkit
 import org.bukkit.World
 import java.io.File
@@ -12,24 +12,22 @@ import java.io.File
 data class EditorInstance(
     val schematic: File,
     val world: World
-): CompositeTerminable by CompositeTerminable.create()
+): Terminable
 {
-    init
+    override fun close()
     {
-        with {
-            if (Bukkit.getWorld(world.name) == null)
-            {
-                return@with
-            }
+        if (Bukkit.getWorld(world.name) == null)
+        {
+            return
+        }
 
-            Bukkit.unloadWorld(world, false)
+        Bukkit.unloadWorld(world, false)
 
-            File(
-                Bukkit.getWorldContainer(),
-                world.name
-            ).apply {
-                deleteRecursively()
-            }
+        File(
+            Bukkit.getWorldContainer(),
+            world.name
+        ).apply {
+            deleteRecursively()
         }
     }
 }

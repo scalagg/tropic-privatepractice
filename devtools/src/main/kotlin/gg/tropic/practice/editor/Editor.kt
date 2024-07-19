@@ -4,6 +4,7 @@ import com.sk89q.worldedit.Vector
 import gg.scala.lemon.hotbar.HotbarPreset
 import gg.scala.lemon.hotbar.HotbarPresetHandler
 import gg.scala.lemon.hotbar.entry.impl.DynamicHotbarPresetEntry
+import gg.scala.lemon.hotbar.entry.impl.StaticHotbarPresetEntry
 import gg.tropic.practice.map.Map
 import gg.tropic.practice.map.MapManageServices
 import gg.tropic.practice.map.MapService
@@ -13,10 +14,14 @@ import gg.tropic.practice.utilities.WorldEditUtils
 import me.lucko.helper.Events
 import me.lucko.helper.Schedulers
 import me.lucko.helper.terminable.composite.CompositeTerminable
+import net.evilblock.cubed.menu.Button
+import net.evilblock.cubed.menu.pagination.PaginatedMenu
 import net.evilblock.cubed.util.CC
 import net.evilblock.cubed.util.bukkit.Constants
 import net.evilblock.cubed.util.bukkit.ItemBuilder
+import net.evilblock.cubed.util.bukkit.Tasks
 import net.evilblock.cubed.util.bukkit.prompt.InputPrompt
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.*
 import org.bukkit.entity.EntityType
@@ -55,7 +60,10 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
         Events
             .subscribe(PlayerQuitEvent::class.java)
             .handler {
-                closeAndReportException()
+                if (it.player.uniqueId == player.uniqueId)
+                {
+                    closeAndReportException()
+                }
             }
             .bindWith(this)
 
@@ -65,25 +73,15 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             instances.remove(player.uniqueId)
         }
 
-        Events
-            .subscribe(EntitySpawnEvent::class.java)
-            .handler {
-                if (it.entityType != EntityType.PLAYER)
-                {
-                    return@handler
-                }
-
-                if (it.location.world.name == visiting?.world?.name)
-                {
-                    it.isCancelled = true
-                    return@handler
-                }
-            }
-            .bindWith(this)
-
         Schedulers
             .sync()
-            .runRepeating({ _ ->
+            .runRepeating({ task ->
+                if (isClosed)
+                {
+                    task.closeAndReportException()
+                    return@runRepeating
+                }
+
                 val audiences = MapManageServices.audiences.player(player)
                 val availableSchematics = schematics.size
 
@@ -91,13 +89,17 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                     LegacyComponentSerializer
                         .legacySection()
                         .deserialize(
-                            "${CC.GREEN}Visiting: ${CC.WHITE}${visiting?.schematic?.nameWithoutExtension ?: "N/A"} ${CC.GRAY}${Constants.THIN_VERTICAL_LINE} ${
-                                "${CC.GREEN}Schematics: ${CC.WHITE}$availableSchematics"
+                            "${CC.BD_RED}Editor ${CC.GRAY}${Constants.THIN_VERTICAL_LINE} ${
+                                "${CC.D_RED}Visiting: ${CC.WHITE}${visiting?.schematic?.nameWithoutExtension ?: "N/A"}${
+                                    if (visiting != null) "${CC.D_GRAY} (${schematics.indexOf(visiting?.schematic) + 1}/${schematics.size})" else ""
+                                }"
+                            } ${CC.GRAY}${Constants.THIN_VERTICAL_LINE} ${
+                                "${CC.D_RED}Schematics: ${CC.WHITE}$availableSchematics"
                             }"
                         )
                 )
             }, 0L, 10L)
-            .bindWith(this)
+            .bindWith(this@Editor)
 
         populateInventoryHotbar()
         visit(schematics.first())
@@ -150,13 +152,7 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                 }
 
                 val index = schematics.indexOf(visiting!!.schematic)
-                if (index <= 0)
-                {
-                    player.sendMessage("${CC.RED}This is the first schematic!")
-                    return@context
-                }
-
-                visit(schematics[index - 1])
+                visit(schematics.getOrNull(index - 1) ?: schematics.last())
             }
         })
 
@@ -176,13 +172,7 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                 }
 
                 val index = schematics.indexOf(visiting!!.schematic)
-                if (index == schematics.size - 1)
-                {
-                    player.sendMessage("${CC.RED}This is the last schematic!")
-                    return@context
-                }
-
-                visit(schematics[index + 1])
+                visit(schematics.getOrNull(index + 1) ?: schematics.first())
             }
         })
 
@@ -190,18 +180,55 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             onBuild = {
                 ItemBuilder.of(Material.NAME_TAG)
                     .glow()
-                    .name("${CC.YELLOW}Rename Current ${CC.GRAY}(Right Click)")
+                    .name("${CC.YELLOW}Search ${CC.GRAY}(Right Click)")
                     .build()
             }
 
             onClick = context@{
-                if (visiting == null)
-                {
-                    player.sendMessage("${CC.RED}You are not visiting!")
-                    return@context
-                }
+                InputPrompt()
+                    .withText("${CC.B_GOLD}Enter the schematic name!")
+                    .acceptInput { _, schematic ->
+                        val file = schematics.firstOrNull { it.nameWithoutExtension == schematic }
+                            ?: return@acceptInput run {
+                                player.sendMessage("${CC.RED}No schematic with that name!")
+                            }
 
-                player.sendMessage("${CC.RED}Not yet implemented!")
+                        visit(file)
+                    }
+                    .start(player)
+            }
+        })
+
+        hotbarPreset.addSlot(6, DynamicHotbarPresetEntry().apply {
+            onBuild = {
+                ItemBuilder.of(Material.PAINTING)
+                    .glow()
+                    .name("${CC.GOLD}All Schematics ${CC.GRAY}(Right Click)")
+                    .build()
+            }
+
+            onClick = context@{
+                object : PaginatedMenu()
+                {
+                    override fun getPrePaginatedTitle(player: Player) = "All schematics..."
+                    override fun getAllPagesButtons(player: Player): kotlin.collections.Map<Int, Button>
+                    {
+                        val mappings = mutableMapOf<Int, Button>()
+                        schematics.forEach {
+                            mappings[mappings.size] = ItemBuilder
+                                .of(Material.MAP)
+                                .name("${CC.WHITE}${it.nameWithoutExtension}")
+                                .addToLore(
+                                    "${CC.GREEN}Click to visit!"
+                                )
+                                .toButton { _, _ ->
+                                    visit(it)
+                                }
+                        }
+
+                        return mappings
+                    }
+                }.openMenu(player)
             }
         })
 
@@ -229,6 +256,11 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             }
         })
 
+        hotbarPreset.addSlot(2, StaticHotbarPresetEntry(
+            ItemBuilder.of(Material.SIGN)
+                .name("${CC.WHITE}Metadata Sign")
+        ))
+
         hotbarPreset.addSlot(1, DynamicHotbarPresetEntry().apply {
             onBuild = {
                 ItemBuilder.of(Material.ENDER_PORTAL_FRAME)
@@ -250,85 +282,37 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                 InputPrompt()
                     .withText("${CC.B_GOLD}Enter the map name! ${CC.GRAY}(do not prefix with Map!) (Capitalize!)")
                     .acceptInput { _, newMapName ->
-                        prepareSlimeWorld(newMapName)
+                        Tasks.delayed(10L) {
+                            val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
 
-                        val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
-                        val availableSpawnMetadata = metadata.metadata.filterIsInstance<MapSpawnMetadata>()
-                        if (availableSpawnMetadata.size >= 2)
-                        {
-                            player.sendMessage("${CC.B_GRAY}(!)${CC.GRAY} Created a metadata copy! We're now going to build the map data model...")
+                            val availableSpawnMetadata = metadata.metadata.filterIsInstance<MapSpawnMetadata>()
+                            if (availableSpawnMetadata.size >= 2)
+                            {
+                                player.sendMessage("${CC.B_GRAY}(!)${CC.GRAY} Created a metadata copy! We're now going to build the map data model & store the map in MongoDB...")
+                                prepareSlimeWorld(newMapName)
 
-                            val map = Map(
-                                name = newMapName.lowercase(),
-                                bounds = bounds,
-                                metadata = metadata,
-                                displayName = newMapName.capitalize(),
-                                associatedSlimeTemplate = "Map${newMapName.capitalize()}"
-                            )
+                                val map = Map(
+                                    name = newMapName.lowercase(),
+                                    bounds = bounds,
+                                    metadata = metadata,
+                                    displayName = newMapName.capitalize(),
+                                    associatedSlimeTemplate = "Map${newMapName.capitalize()}"
+                                )
 
-                            with(MapService.cached()) {
-                                maps[map.name] = map
-                                MapService.sync(this)
+                                with(MapService.cached()) {
+                                    maps[map.name] = map
+                                    MapService.sync(this)
 
-                                player.playSound(player.location, Sound.FIREWORK_LAUNCH, 1.0f, 1.0f)
-                                player.sendMessage("${CC.B_GREEN}(!)${CC.GREEN} Successfully created map ${CC.YELLOW}${map.name}${CC.GREEN}!")
+                                    player.playSound(player.location, Sound.FIREWORK_LAUNCH, 1.0f, 1.0f)
+                                    player.sendMessage("${CC.B_GREEN}(!)${CC.GREEN} Successfully created map ${CC.YELLOW}${map.name}${CC.GREEN}!")
+                                }
+                            } else
+                            {
+                                player.sendMessage("${CC.B_RED}(!) Failed to create a metadata copy! We found no spawn locations in the map. Please try again.")
                             }
-                        } else
-                        {
-                            player.sendMessage("${CC.B_RED}(!) Failed to create a metadata copy! We found no spawn locations in the map. Please try again.")
                         }
                     }
                     .start(player)
-            }
-        })
-
-        hotbarPreset.addSlot(2, DynamicHotbarPresetEntry().apply {
-            onBuild = {
-                ItemBuilder.of(Material.EMPTY_MAP)
-                    .glow()
-                    .name("${CC.B_WHITE}(DEV) ${CC.PINK}Minimum ${CC.GRAY}(Right Click)")
-                    .build()
-            }
-
-            onClick = context@{
-                if (visiting == null)
-                {
-                    player.sendMessage("${CC.RED}You are not visiting!")
-                    return@context
-                }
-
-                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
-                player.sendMessage("${CC.GREEN}Teleported!")
-                player.teleport(
-                    bounds.lowerLeft
-                        .toLocation(visiting!!.world)
-                        .add(0.0, 64.0, 0.0)
-                )
-            }
-        })
-
-        hotbarPreset.addSlot(3, DynamicHotbarPresetEntry().apply {
-            onBuild = {
-                ItemBuilder.of(Material.EMPTY_MAP)
-                    .glow()
-                    .name("${CC.B_WHITE}(DEV) ${CC.DARK_PURPLE}Maximum ${CC.GRAY}(Right Click)")
-                    .build()
-            }
-
-            onClick = context@{
-                if (visiting == null)
-                {
-                    player.sendMessage("${CC.RED}You are not visiting!")
-                    return@context
-                }
-
-                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
-                player.sendMessage("${CC.GREEN}Teleported!")
-                player.teleport(
-                    bounds.upperRight
-                        .toLocation(visiting!!.world)
-                        .add(0.0, 64.0, 0.0)
-                )
             }
         })
 
@@ -362,17 +346,28 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
         player.playSound(player.location, Sound.LEVEL_UP, 1.0f, 1.0f)
         player.sendMessage("${CC.GREEN}Imported!")
 
+        val oldSchematic = visiting?.schematic
         visiting?.closeAndReportException()
-        if (visiting != null)
+        visiting = null
+
+        if (oldSchematic != null)
         {
-            visit(visiting!!.schematic)
+            visit(oldSchematic)
         }
     }
 
     override fun close()
     {
+        val audiences = MapManageServices.audiences.player(player)
+        audiences.sendActionBar(Component.empty())
+
         player.inventory.clear()
         player.updateInventory()
+
+        player.teleport(Location(
+            Bukkit.getWorld("world"),
+            0.0, 100.0, 0.0
+        ))
 
         HotbarPresetHandler.forget(editorID)
     }

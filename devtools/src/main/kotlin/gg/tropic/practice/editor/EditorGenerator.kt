@@ -1,6 +1,8 @@
 package gg.tropic.practice.editor
 
-import org.bukkit.*
+import org.bukkit.Location
+import org.bukkit.World
+import org.bukkit.WorldCreator
 import org.bukkit.generator.BlockPopulator
 import org.bukkit.generator.ChunkGenerator
 import java.util.*
@@ -33,6 +35,9 @@ object EditorGenerator
             .name("editor_temp_${UUID.randomUUID()}")
             .generator(VoidWorldGenerator)
             .createWorld()
+            .apply {
+                setGameRuleValue("doMobSpawning", "false")
+            }
     }
 
 }

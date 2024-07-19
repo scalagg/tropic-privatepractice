@@ -16,7 +16,7 @@ data class Bounds(
 {
     fun getTileEntities(world: World): List<BlockState>
     {
-        return getChunks(world)
+        return world.loadedChunks
             .flatMap {
                 it.tileEntities.toList()
             }
