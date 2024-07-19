@@ -4,7 +4,11 @@ import com.sk89q.worldedit.Vector
 import gg.scala.lemon.hotbar.HotbarPreset
 import gg.scala.lemon.hotbar.HotbarPresetHandler
 import gg.scala.lemon.hotbar.entry.impl.DynamicHotbarPresetEntry
+import gg.tropic.practice.map.Map
 import gg.tropic.practice.map.MapManageServices
+import gg.tropic.practice.map.MapService
+import gg.tropic.practice.map.metadata.impl.MapSpawnMetadata
+import gg.tropic.practice.map.utilities.MapMetadataScanUtilities
 import gg.tropic.practice.utilities.WorldEditUtils
 import me.lucko.helper.Events
 import me.lucko.helper.Schedulers
@@ -199,40 +203,114 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                 }
 
                 InputPrompt()
-                    .withText("${CC.B_GOLD}Enter a Slime world name!")
+                    .withText("${CC.B_GOLD}Enter the Slime world name! ${CC.GRAY}(do not prefix with Map!)")
                     .acceptInput { _, newWorldName ->
-                        runCatching {
-                            player.sendMessage("${CC.GOLD}Preparing world...")
-                            player.teleport(
-                                Location(
-                                    Bukkit.getWorld("world"),
-                                    0.0, 100.0, 0.0
-                                )
+                        prepareSlimeWorld(newWorldName)
+                    }
+                    .start(player)
+            }
+        })
+
+        hotbarPreset.addSlot(1, DynamicHotbarPresetEntry().apply {
+            onBuild = {
+                ItemBuilder.of(Material.ENDER_PORTAL_FRAME)
+                    .glow()
+                    .name("${CC.U_AQUA}Develop Map ${CC.GRAY}(Right Click)")
+                    .build()
+            }
+
+            onClick = context@{
+                if (visiting == null)
+                {
+                    player.sendMessage("${CC.RED}You are not visiting!")
+                    return@context
+                }
+
+                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
+                player.sendMessage("${CC.GREEN}Prepared bounds!")
+
+                InputPrompt()
+                    .withText("${CC.B_GOLD}Enter the map name! ${CC.GRAY}(do not prefix with Map!) (Capitalize!)")
+                    .acceptInput { _, newMapName ->
+                        prepareSlimeWorld(newMapName)
+
+                        val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
+                        val availableSpawnMetadata = metadata.metadata.filterIsInstance<MapSpawnMetadata>()
+                        if (availableSpawnMetadata.size >= 2)
+                        {
+                            player.sendMessage("${CC.B_GRAY}(!)${CC.GRAY} Created a metadata copy! We're now going to build the map data model...")
+
+                            val map = Map(
+                                name = newMapName.lowercase(),
+                                bounds = bounds,
+                                metadata = metadata,
+                                displayName = newMapName.capitalize(),
+                                associatedSlimeTemplate = "Map${newMapName.capitalize()}"
                             )
 
-                            val worldName = visiting!!.world.name
-                            Bukkit.unloadWorld(visiting!!.world, true)
+                            with(MapService.cached()) {
+                                maps[map.name] = map
+                                MapService.sync(this)
 
-                            player.sendMessage("${CC.GREEN}Importing into SWM -> MongoDB...")
-                            MapManageServices.slimePlugin.importWorld(
-                                File(Bukkit.getWorldContainer(), worldName),
-                                newWorldName,
-                                MapManageServices.loader
-                            )
-
-                            player.playSound(player.location, Sound.LEVEL_UP, 1.0f, 1.0f)
-                            player.sendMessage("${CC.GREEN}Imported!")
-
-                            visiting?.closeAndReportException()
-                            if (visiting != null)
-                            {
-                                visit(visiting!!.schematic)
+                                player.playSound(player.location, Sound.FIREWORK_LAUNCH, 1.0f, 1.0f)
+                                player.sendMessage("${CC.B_GREEN}(!)${CC.GREEN} Successfully created map ${CC.YELLOW}${map.name}${CC.GREEN}!")
                             }
-                        }.onFailure {
-                            it.printStackTrace()
+                        } else
+                        {
+                            player.sendMessage("${CC.B_RED}(!) Failed to create a metadata copy! We found no spawn locations in the map. Please try again.")
                         }
                     }
                     .start(player)
+            }
+        })
+
+        hotbarPreset.addSlot(2, DynamicHotbarPresetEntry().apply {
+            onBuild = {
+                ItemBuilder.of(Material.EMPTY_MAP)
+                    .glow()
+                    .name("${CC.B_WHITE}(DEV) ${CC.PINK}Minimum ${CC.GRAY}(Right Click)")
+                    .build()
+            }
+
+            onClick = context@{
+                if (visiting == null)
+                {
+                    player.sendMessage("${CC.RED}You are not visiting!")
+                    return@context
+                }
+
+                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
+                player.sendMessage("${CC.GREEN}Teleported!")
+                player.teleport(
+                    bounds.lowerLeft
+                        .toLocation(visiting!!.world)
+                        .add(0.0, 64.0, 0.0)
+                )
+            }
+        })
+
+        hotbarPreset.addSlot(3, DynamicHotbarPresetEntry().apply {
+            onBuild = {
+                ItemBuilder.of(Material.EMPTY_MAP)
+                    .glow()
+                    .name("${CC.B_WHITE}(DEV) ${CC.DARK_PURPLE}Maximum ${CC.GRAY}(Right Click)")
+                    .build()
+            }
+
+            onClick = context@{
+                if (visiting == null)
+                {
+                    player.sendMessage("${CC.RED}You are not visiting!")
+                    return@context
+                }
+
+                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
+                player.sendMessage("${CC.GREEN}Teleported!")
+                player.teleport(
+                    bounds.upperRight
+                        .toLocation(visiting!!.world)
+                        .add(0.0, 64.0, 0.0)
+                )
             }
         })
 
@@ -241,6 +319,36 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             editorID,
             hotbarPreset
         )
+    }
+
+    private fun prepareSlimeWorld(newWorldName: String)
+    {
+        player.sendMessage("${CC.GOLD}Preparing world...")
+        player.teleport(
+            Location(
+                Bukkit.getWorld("world"),
+                0.0, 100.0, 0.0
+            )
+        )
+
+        val worldName = visiting!!.world.name
+        Bukkit.unloadWorld(visiting!!.world, true)
+
+        player.sendMessage("${CC.GREEN}Importing into SWM -> MongoDB...")
+        MapManageServices.slimePlugin.importWorld(
+            File(Bukkit.getWorldContainer(), worldName),
+            "Map${newWorldName.capitalize()}",
+            MapManageServices.loader
+        )
+
+        player.playSound(player.location, Sound.LEVEL_UP, 1.0f, 1.0f)
+        player.sendMessage("${CC.GREEN}Imported!")
+
+        visiting?.closeAndReportException()
+        if (visiting != null)
+        {
+            visit(visiting!!.schematic)
+        }
     }
 
     override fun close()
