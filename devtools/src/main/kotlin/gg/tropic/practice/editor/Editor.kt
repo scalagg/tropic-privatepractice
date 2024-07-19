@@ -19,7 +19,9 @@ import net.evilblock.cubed.util.bukkit.ItemBuilder
 import net.evilblock.cubed.util.bukkit.prompt.InputPrompt
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.*
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
+import org.bukkit.event.entity.EntitySpawnEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import java.io.File
 import java.util.UUID
@@ -62,6 +64,22 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
         with {
             instances.remove(player.uniqueId)
         }
+
+        Events
+            .subscribe(EntitySpawnEvent::class.java)
+            .handler {
+                if (it.entityType != EntityType.PLAYER)
+                {
+                    return@handler
+                }
+
+                if (it.location.world.name == visiting?.world?.name)
+                {
+                    it.isCancelled = true
+                    return@handler
+                }
+            }
+            .bindWith(this)
 
         Schedulers
             .sync()

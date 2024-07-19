@@ -5,6 +5,8 @@ import gg.scala.commons.acf.annotation.*
 import gg.scala.commons.annotations.commands.AutoRegister
 import gg.scala.commons.command.ScalaCommand
 import gg.scala.commons.issuer.ScalaPlayer
+import gg.scala.flavor.inject.Inject
+import gg.tropic.practice.PracticeDevTools
 import gg.tropic.practice.editor.Editor
 import net.evilblock.cubed.util.CC
 
@@ -17,6 +19,9 @@ import net.evilblock.cubed.util.CC
 @CommandAlias("editor")
 object EditorCommand : ScalaCommand()
 {
+    @Inject
+    lateinit var plugin: PracticeDevTools
+
     @Default
     fun default(player: ScalaPlayer)
     {
@@ -26,7 +31,9 @@ object EditorCommand : ScalaCommand()
         }
 
         player.sendMessage("${CC.GOLD}Entering the editor...")
-        Editor(player.bukkit()).initialize()
+        Editor(player.bukkit()).apply {
+            bindWith(plugin)
+        }.initialize()
     }
 
     @Subcommand("leave")
