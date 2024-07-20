@@ -11,6 +11,7 @@ import net.evilblock.cubed.serializers.Serializers
 import org.bson.Document
 import java.util.concurrent.CompletableFuture
 import java.util.logging.Logger
+import kotlin.system.exitProcess
 
 /**
  * @author GrowlyX
@@ -166,13 +167,19 @@ abstract class DPSDataSync<T>
             it.printStackTrace()
         }
 
-        this.cached = Serializers.gson
-            .fromJson(
-                model, type()
-            )
-            ?: type()
-                .getDeclaredConstructor()
-                .newInstance()
+        kotlin.runCatching {
+            this.cached = Serializers.gson
+                .fromJson(
+                    model, type()
+                )
+                ?: type()
+                    .getDeclaredConstructor()
+                    .newInstance()
+        }.onFailure {
+            println("FAILED SOMETHING IN ${this.javaClass.name} ${this.type().name}")
+            it.printStackTrace()
+            exitProcess(4)
+        }
 
         kotlin.runCatching {
             postReload()

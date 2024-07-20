@@ -66,7 +66,7 @@ enum class FeatureFlag(
         schema = mutableMapOf("weight" to "0")
     ),
     ExpirePlacedBlocksAfterNSeconds(
-        schema = mutableMapOf("time" to "10"),
+        schema = mutableMapOf("time" to "10", "return" to "false"),
         requires = setOf(PlaceBlocks)
     ),
     DeathOnLiquidInteraction,
@@ -102,6 +102,14 @@ enum class FeatureFlag(
     ),
 
     SpectateAfterDeath(
+        incompatibleWith = { setOf(ImmediateRespawnOnDeath) },
+        availableLifecycles = setOf(
+            GameLifecycle.RoundBound,
+            GameLifecycle.ObjectivePlusSoulBound,
+            GameLifecycle.ObjectiveBound
+        )
+    ),
+    ClearIllegalBlocksOnRespawn(
         incompatibleWith = { setOf(ImmediateRespawnOnDeath) },
         availableLifecycles = setOf(
             GameLifecycle.RoundBound,

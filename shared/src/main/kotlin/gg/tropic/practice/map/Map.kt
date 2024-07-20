@@ -11,6 +11,7 @@ import net.evilblock.cubed.util.bukkit.ItemBuilder
 import net.evilblock.cubed.util.bukkit.Tasks
 import org.bukkit.Material
 import org.bukkit.World
+import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.inventory.ItemStack
 import java.util.concurrent.CompletableFuture
@@ -26,7 +27,7 @@ import java.util.concurrent.CompletableFuture
 data class Map(
     val name: String,
     val bounds: Bounds,
-    val metadata: MapMetadata,
+    var metadata: MapMetadata,
     var displayName: String,
     var displayIcon: ItemStack = ItemBuilder
         .of(Material.MAP)
@@ -48,6 +49,13 @@ data class Map(
         .filterIsInstance<MapZoneMetadata>()
         .firstOrNull {
             it.bounds.contains(entity.location.toPosition())
+        }
+
+    fun findZoneContainingBlock(block: Block) = metadata
+        .metadata
+        .filterIsInstance<MapZoneMetadata>()
+        .firstOrNull {
+            it.bounds.contains(block.location.toPosition())
         }
 
     fun findSpawnLocationMatchingTeam(team: GameTeamSide) = metadata

@@ -22,10 +22,8 @@ data class MapMetadata(
                 world.getBlockAt(it.blockX, it.blockY, it.blockZ)
             }
 
-        Tasks.sync {
-            blocks.forEach {
-                it.type = Material.AIR
-            }
+        blocks.forEach {
+            it.type = Material.AIR
         }
     }
 }

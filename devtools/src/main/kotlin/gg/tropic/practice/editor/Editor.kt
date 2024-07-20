@@ -35,7 +35,7 @@ import java.util.UUID
  * @author GrowlyX
  * @since 7/18/2024
  */
-class Editor(private val player: Player) : CompositeTerminable by CompositeTerminable.create()
+class Editor(private val player: Player)
 {
     companion object
     {
@@ -49,6 +49,8 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
     private val schematics = containers.schematicsDirectory.listFiles()
         ?.toList()?.filterNotNull() ?: emptyList()
 
+    val terminable = CompositeTerminable.create()
+
     fun initialize()
     {
         if (schematics.isEmpty())
@@ -57,26 +59,40 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
             return
         }
 
+        player.sendMessage("Subscribing to everything")
         Events
             .subscribe(PlayerQuitEvent::class.java)
             .handler {
                 if (it.player.uniqueId == player.uniqueId)
                 {
-                    closeAndReportException()
+                    terminable.closeAndReportException()
                 }
             }
-            .bindWith(this)
+            .bindWith(terminable)
 
         instances[player.uniqueId] = this
 
-        with {
+        terminable.with {
+            val audiences = MapManageServices.audiences.player(player)
+            audiences.sendActionBar(Component.empty())
+
+            player.inventory.clear()
+            player.updateInventory()
+
+            player.teleport(Location(
+                Bukkit.getWorld("world"),
+                0.0, 100.0, 0.0
+            ))
+
+            HotbarPresetHandler.forget(editorID)
+
             instances.remove(player.uniqueId)
         }
 
         Schedulers
             .sync()
             .runRepeating({ task ->
-                if (isClosed)
+                if (terminable.isClosed)
                 {
                     task.closeAndReportException()
                     return@runRepeating
@@ -99,7 +115,7 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                         )
                 )
             }, 0L, 10L)
-            .bindWith(this@Editor)
+            .bindWith(terminable)
 
         populateInventoryHotbar()
         visit(schematics.first())
@@ -115,7 +131,7 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
         )
 
         val instance = EditorInstance(schematic, newWorld)
-        instance.bindWith(this)
+        instance.bindWith(terminable)
 
         player.gameMode = GameMode.CREATIVE
         player.allowFlight = true
@@ -234,25 +250,21 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
 
         hotbarPreset.addSlot(4, DynamicHotbarPresetEntry().apply {
             onBuild = {
-                ItemBuilder.of(Material.SLIME_BALL)
+                ItemBuilder.of(Material.GOLD_AXE)
                     .glow()
-                    .name("${CC.GOLD}Convert to Slime ${CC.GRAY}(Right Click)")
+                    .name("${CC.B_YELLOW}Through ${CC.GRAY}(Right Click)")
                     .build()
             }
 
             onClick = context@{
-                if (visiting == null)
-                {
-                    player.sendMessage("${CC.RED}You are not visiting!")
-                    return@context
-                }
+                player.chat("//thru")
 
-                InputPrompt()
-                    .withText("${CC.B_GOLD}Enter the Slime world name! ${CC.GRAY}(do not prefix with Map!)")
+                /*InputPrompt()
+                    .withText("${CC.B_GOLD}Enter the map ID! ${CC.GRAY}(do not prefix with Map!)")
                     .acceptInput { _, newWorldName ->
                         prepareSlimeWorld(newWorldName)
                     }
-                    .start(player)
+                    .start(player)*/
             }
         })
 
@@ -279,40 +291,118 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
                 val bounds = visiting!!.world.loadedChunks.toList().toBounds()
                 player.sendMessage("${CC.GREEN}Prepared bounds!")
 
+                val newMapName = visiting!!.schematic
+                    .nameWithoutExtension
+                    .replace("_", "")
+                    .capitalize()
+
+                if (MapService.mapWithID(newMapName) != null)
+                {
+                    player.sendMessage("${CC.RED}A map with this name already exists!")
+                    return@context
+                }
+
+                val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
+
+                val availableSpawnMetadata = metadata.metadata.filterIsInstance<MapSpawnMetadata>()
+                if (availableSpawnMetadata.size >= 2)
+                {
+                    player.sendMessage("${CC.B_GRAY}(!)${CC.GRAY} Created a metadata copy! We're now going to build the map data model & store the map in MongoDB...")
+                    prepareSlimeWorld(newMapName)
+
+                    val map = Map(
+                        name = newMapName.lowercase(),
+                        bounds = bounds,
+                        metadata = metadata,
+                        displayName = newMapName.capitalize(),
+                        associatedSlimeTemplate = "Map${newMapName.capitalize()}"
+                    )
+
+                    with(MapService.cached()) {
+                        maps[map.name] = map
+                        MapService.sync(this)
+
+                        player.playSound(player.location, Sound.FIREWORK_LAUNCH, 1.0f, 1.0f)
+                        player.sendMessage("${CC.B_GREEN}(!)${CC.GREEN} Successfully created map ${CC.YELLOW}${map.name}${CC.GREEN}!")
+                    }
+                } else
+                {
+                    player.sendMessage("${CC.B_RED}(!) Failed to create a metadata copy! We found no spawn locations in the map. Please try again.")
+                }
+            }
+        })
+
+        hotbarPreset.addSlot(3, DynamicHotbarPresetEntry().apply {
+            onBuild = {
+                ItemBuilder.of(Material.ACTIVATOR_RAIL)
+                    .glow()
+                    .name("${CC.D_RED}Update Map Metadata ${CC.GRAY}(Right Click)")
+                    .build()
+            }
+
+            onClick = context@{
+                if (visiting == null)
+                {
+                    player.sendMessage("${CC.RED}You are not visiting!")
+                    return@context
+                }
+
+                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
+                player.sendMessage("${CC.GREEN}Prepared bounds!")
+
+                val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
+
                 InputPrompt()
-                    .withText("${CC.B_GOLD}Enter the map name! ${CC.GRAY}(do not prefix with Map!) (Capitalize!)")
+                    .withText("${CC.B_GOLD}Enter the map ID!")
                     .acceptInput { _, newMapName ->
-                        Tasks.delayed(10L) {
-                            val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
-
-                            val availableSpawnMetadata = metadata.metadata.filterIsInstance<MapSpawnMetadata>()
-                            if (availableSpawnMetadata.size >= 2)
-                            {
-                                player.sendMessage("${CC.B_GRAY}(!)${CC.GRAY} Created a metadata copy! We're now going to build the map data model & store the map in MongoDB...")
-                                prepareSlimeWorld(newMapName)
-
-                                val map = Map(
-                                    name = newMapName.lowercase(),
-                                    bounds = bounds,
-                                    metadata = metadata,
-                                    displayName = newMapName.capitalize(),
-                                    associatedSlimeTemplate = "Map${newMapName.capitalize()}"
-                                )
-
-                                with(MapService.cached()) {
-                                    maps[map.name] = map
-                                    MapService.sync(this)
-
-                                    player.playSound(player.location, Sound.FIREWORK_LAUNCH, 1.0f, 1.0f)
-                                    player.sendMessage("${CC.B_GREEN}(!)${CC.GREEN} Successfully created map ${CC.YELLOW}${map.name}${CC.GREEN}!")
-                                }
-                            } else
-                            {
-                                player.sendMessage("${CC.B_RED}(!) Failed to create a metadata copy! We found no spawn locations in the map. Please try again.")
+                        val map = MapService.mapWithID(newMapName)
+                            ?: return@acceptInput run {
+                                player.sendMessage("${CC.RED}No schematic with that name!")
                             }
+
+                        val availableSpawnMetadata = metadata.metadata.filterIsInstance<MapSpawnMetadata>()
+                        if (availableSpawnMetadata.size >= 2)
+                        {
+                            map.metadata = metadata
+
+                            with(MapService.cached()) {
+                                maps[map.name] = map
+                                MapService.sync(this)
+
+                                player.playSound(player.location, Sound.FIREWORK_LAUNCH, 1.0f, 1.0f)
+                                player.sendMessage("${CC.B_GREEN}(!)${CC.GREEN} Updated map ${CC.YELLOW}${map.name}${CC.GREEN}!")
+                            }
+                        } else
+                        {
+                            player.sendMessage("${CC.RED}Your metadata is invalid!")
                         }
                     }
                     .start(player)
+            }
+        })
+
+        hotbarPreset.addSlot(5, DynamicHotbarPresetEntry().apply {
+            onBuild = {
+                ItemBuilder.of(Material.PAPER)
+                    .glow()
+                    .name("${CC.AQUA}Report Metadata ${CC.GRAY}(Right Click)")
+                    .build()
+            }
+
+            onClick = context@{
+                if (visiting == null)
+                {
+                    player.sendMessage("${CC.RED}You are not visiting!")
+                    return@context
+                }
+
+                val bounds = visiting!!.world.loadedChunks.toList().toBounds()
+                val metadata = MapMetadataScanUtilities.buildMetadataFor(bounds, visiting!!.world)
+
+                player.sendMessage("${CC.GREEN}[Metadata report ${CC.GRAY}(${metadata.metadata.size})${CC.GREEN}]")
+                metadata.metadata.forEach {
+                    player.sendMessage("${CC.GRAY}${Constants.THIN_VERTICAL_LINE} ${CC.WHITE}${it.report()}")
+                }
             }
         })
 
@@ -354,21 +444,5 @@ class Editor(private val player: Player) : CompositeTerminable by CompositeTermi
         {
             visit(oldSchematic)
         }
-    }
-
-    override fun close()
-    {
-        val audiences = MapManageServices.audiences.player(player)
-        audiences.sendActionBar(Component.empty())
-
-        player.inventory.clear()
-        player.updateInventory()
-
-        player.teleport(Location(
-            Bukkit.getWorld("world"),
-            0.0, 100.0, 0.0
-        ))
-
-        HotbarPresetHandler.forget(editorID)
     }
 }

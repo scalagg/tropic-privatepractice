@@ -29,17 +29,25 @@ object MapMetadataScanUtilities
             .onEach {
                 scheduledRemoval += it.location.block.location.toVector()
             }
-            .groupBy { it.id }
+            .groupBy { "${it.metaType}${it.id}" }
 
         val metadata = mutableListOf<AbstractMapMetadata>()
         for (modelMapping in modelMappings)
         {
-            val scanner = modelMapping
-                .value.first().scanner
+            val model = modelMapping.value.first()
+            val scanner = model.scanner
 
-            metadata += scanner.scan(
-                modelMapping.key, modelMapping.value
-            )
+            val scannedMetadata = runCatching {
+                scanner.scan(
+                    modelMapping.key.removePrefix(model.metaType),
+                    modelMapping.value
+                )
+            }.getOrNull()
+
+            if (scannedMetadata != null)
+            {
+                metadata += scannedMetadata
+            }
         }
 
         return MapMetadata(

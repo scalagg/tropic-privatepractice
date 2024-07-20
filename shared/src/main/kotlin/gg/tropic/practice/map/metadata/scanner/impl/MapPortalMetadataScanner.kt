@@ -17,8 +17,13 @@ object MapPortalMetadataScanner : AbstractMapMetadataScanner<MapPortalMetadata>(
     override fun scan(
         id: String,
         models: List<MapSignMetadataModel>
-    ): MapPortalMetadata
+    ): MapPortalMetadata?
     {
+        if (models.size != 2)
+        {
+            return null
+        }
+
         return MapPortalMetadata(
             id,
             models[0].location.toPosition(),

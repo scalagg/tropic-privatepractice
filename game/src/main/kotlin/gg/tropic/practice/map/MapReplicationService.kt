@@ -33,6 +33,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import kotlin.concurrent.thread
 
@@ -96,6 +97,14 @@ object MapReplicationService
 
             val scheduledMap = findScheduledReplication(expectation.identifier)
                 ?: return@handler
+
+            Schedulers
+                .sync()
+                .run {
+                    newGame.map.metadata.clearSignLocations(scheduledMap.world)
+                    newGame.map.prepare(scheduledMap.world)
+                }
+                .join()
 
             scheduledMap.inUse = true
             newGame.arenaWorldName = scheduledMap.world.name
@@ -350,16 +359,18 @@ object MapReplicationService
         metadata.metadata
             .filterIsInstance<MapPortalMetadata>()
             .forEach {
-                Tasks.sync {
-                    it.bounds.utility(world).forEach { block ->
-                        block.setMetadata(
-                            "tropicportal",
-                            FixedMetadataValue(plugin, it.id)
-                        )
-
-                        block.state.type = Material.ENDER_PORTAL
-                        block.state.update()
+                for (block in it.bounds.utility(world))
+                {
+                    if (block == null)
+                    {
+                        continue
                     }
+
+                    block.type = Material.ENDER_PORTAL
+                    block.setMetadata(
+                        "tropicportal",
+                        FixedMetadataValue(plugin, it.id)
+                    )
                 }
             }
     }
@@ -385,9 +396,6 @@ object MapReplicationService
                 submitWorldRequest(worldName)
             }
             .thenApply {
-                arena.metadata.clearSignLocations(it)
-                arena.prepare(it)
-
                 BuiltMapReplication(arena, it)
             }
             .exceptionally {

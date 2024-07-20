@@ -16,5 +16,6 @@ data class MapLevelMetadata(
     val range: IntRange
         get() = (yAxis - below)..yAxis
 
+    override fun report() = "Level | $id | ${if (allowBuildOnBlockSideBlockFaces) "Allows build on side" else "N/A"} | $below blocks below | At $yAxis"
     override fun getAbstractType() = MapLevelMetadata::class.java
 }

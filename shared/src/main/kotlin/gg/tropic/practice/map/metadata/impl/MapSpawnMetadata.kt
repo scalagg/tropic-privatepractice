@@ -12,5 +12,6 @@ data class MapSpawnMetadata(
     var position: Position
 ) : AbstractMapMetadata()
 {
+    override fun report() = "Spawn | $id | $position"
     override fun getAbstractType() = MapSpawnMetadata::class.java
 }

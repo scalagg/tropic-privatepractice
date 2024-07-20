@@ -16,8 +16,13 @@ object MapZoneMetadataScanner : AbstractMapMetadataScanner<MapZoneMetadata>()
     override fun scan(
         id: String,
         models: List<MapSignMetadataModel>
-    ): MapZoneMetadata
+    ): MapZoneMetadata?
     {
+        if (models.size != 2)
+        {
+            return null
+        }
+
         return MapZoneMetadata(
             id,
             models[0].location.toPosition(),

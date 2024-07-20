@@ -41,6 +41,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.World
+import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
@@ -54,10 +55,10 @@ import java.util.logging.Logger
  * @author GrowlyX
  * @since 8/4/2022
  */
-class GameImpl(
+open class GameImpl(
     expectation: GameExpectation,
-    teams: Map<GameTeamSide, GameTeam> = expectation.teams,
     kit: Kit,
+    teams: Map<GameTeamSide, GameTeam> = expectation.teams,
     var state: GameState = GameState.Waiting,
     private val mapId: String = expectation.mapId
 ) : AbstractGame(expectation, teams, kit), CompositeTerminable by CompositeTerminable.create()
@@ -427,6 +428,11 @@ class GameImpl(
             player.uniqueId in it.players
         }
 
+    fun getNullableTeam(player: Player) = this.teams.values
+        .firstOrNull {
+            player.uniqueId in it.players
+        }
+
     fun getOpponent(player: Player) =
         this.getOpponent(
             this.getTeamOf(player)
@@ -728,5 +734,25 @@ class GameImpl(
         toPlayers().forEach {
             playerCounters[it] = Counter(it)
         }
+    }
+
+    fun cleanupWorld()
+    {
+        if (placedBlocks.isNotEmpty())
+        {
+            placedBlocks.forEach {
+                arenaWorld
+                    ?.getBlockAt(it.toLocation(arenaWorld))
+                    ?.apply {
+                        type = Material.AIR
+                    }
+            }
+        }
+
+        arenaWorld?.entities
+            ?.filterIsInstance<Item>()
+            ?.onEach {
+                it.remove()
+            }
     }
 }

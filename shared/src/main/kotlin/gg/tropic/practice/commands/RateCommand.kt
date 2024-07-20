@@ -58,7 +58,7 @@ object RateCommand : ScalaCommand()
                 }
                 .thenRunAsync {
                     player.playSound(player.location, Sound.LEVEL_UP, 1.0f, 1.0f)
-                    player.sendMessage("${CC.GREEN}Thank you for providing feedback for the map ${CC.YELLOW}${map.name}${CC.GREEN}!")
+                    player.sendMessage("${CC.GREEN}Thank you for providing feedback for the map ${CC.YELLOW}${map.displayName}${CC.GREEN}!")
                 }
         }
 }

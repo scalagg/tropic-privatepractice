@@ -15,5 +15,6 @@ data class MapZoneMetadata(
     val bounds: Bounds = Bounds(lower, top)
 ) : AbstractMapMetadata()
 {
+    override fun report() = "Zone | $id | $lower -> $top"
     override fun getAbstractType() = MapZoneMetadata::class.java
 }

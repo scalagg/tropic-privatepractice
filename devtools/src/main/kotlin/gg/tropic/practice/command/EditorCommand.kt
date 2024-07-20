@@ -32,7 +32,7 @@ object EditorCommand : ScalaCommand()
 
         player.sendMessage("${CC.GOLD}Entering the editor...")
         Editor(player.bukkit()).apply {
-            bindWith(plugin)
+            terminable.bindWith(plugin)
         }.initialize()
     }
 
@@ -44,7 +44,7 @@ object EditorCommand : ScalaCommand()
             throw ConditionFailedException("Not in editor!")
         }
 
-        Editor.instances[player.uniqueId]?.closeAndReportException()
+        Editor.instances[player.uniqueId]?.terminable?.closeAndReportException()
         Editor.instances.remove(player.uniqueId)
 
         player.sendMessage("${CC.RED}Left editor.")

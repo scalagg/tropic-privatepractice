@@ -11,5 +11,5 @@ abstract class AbstractMapMetadataScanner<T : AbstractMapMetadata>
 {
     abstract val type: String
 
-    abstract fun scan(id: String, models: List<MapSignMetadataModel>): T
+    abstract fun scan(id: String, models: List<MapSignMetadataModel>): T?
 }

@@ -127,7 +127,6 @@ object LobbyHotbarService
                 if (it.response.parameters.containsKey("rematch-kit-id"))
                 {
                     val rematchKitID = it.response.parameters["rematch-kit-id"]
-                    val rematchMapID = it.response.parameters["rematch-map-id"]
                     val rematchTargetID = it.response.parameters["rematch-target-id"]
                     val rematchTargetRegion = Region.valueOf(it.response.parameters["rematch-region"]!!)
 
@@ -135,12 +134,11 @@ object LobbyHotbarService
                         ?: return@handler
 
                     loginTasks.getOrPut(it.uniqueId, ::mutableListOf) += { player ->
+                        val username = UUID.fromString(rematchTargetID).username()
                         val rematchItem = ItemBuilder
                             .of(Material.PAPER)
                             .name(
-                                "${CC.D_GREEN}Rematch ${
-                                    UUID.fromString(rematchTargetID).username()
-                                } ${CC.GRAY}(Right Click)"
+                                "${CC.D_GREEN}Rematch $username ${CC.GRAY}(Right Click)"
                             )
                             .build()
 
@@ -153,13 +151,7 @@ object LobbyHotbarService
                                     event.item.isSimilar(rematchItem)
                             }
                             .handler {
-
-                                DuelRequestPipeline.automateDuelRequestWithMapSelectUI(
-                                    player = player,
-                                    target = UUID.fromString(rematchTargetID!!),
-                                    kit = kit,
-                                    region = rematchTargetRegion
-                                )
+                                player.chat("/duel $username ${kit.id}")
 
                                 Button.playNeutral(player)
                                 terminable.closeAndReportException()
@@ -243,6 +235,25 @@ object LobbyHotbarService
                     }
 
                     JoinQueueMenu(QueueType.Casual, 1).openMenu(player)
+                }
+            }
+        )
+
+        idlePreset.addSlot(
+            2,
+            StaticHotbarPresetEntry(
+                ItemBuilder(Material.GOLD_SWORD)
+                    .name("${CC.SEC}Play Bot Fights ${CC.GRAY}(Right Click)")
+                    .setUnbreakable(true)
+            ).also {
+                it.onClick = context@{ player ->
+                    if (player.hasMetadata("frozen"))
+                    {
+                        player.sendMessage("${CC.RED}You cannot join queues while frozen!")
+                        return@context
+                    }
+
+                    player.sendMessage("${CC.RED}This feature is coming soon!")
                 }
             }
         )
@@ -340,7 +351,7 @@ object LobbyHotbarService
             }
         )
 
-        idlePreset.addSlot(2, kitEditor)
+        idlePreset.addSlot(6, kitEditor)
         idlePreset.addSlot(8, settings)
 
         HotbarPresetHandler.startTrackingHotbar("idle", idlePreset)

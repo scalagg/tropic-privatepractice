@@ -15,5 +15,6 @@ data class MapPortalMetadata(
     val bounds: Bounds = Bounds(lower, top)
 ) : AbstractMapMetadata()
 {
+    override fun report() = "Portal | $id | $lower -> $top"
     override fun getAbstractType() = MapPortalMetadata::class.java
 }

@@ -244,7 +244,7 @@ class GameStartTask(
                 }
             }
 
-            this.game.playSound(Sound.NOTE_PLING, pitch = 1.2f)
+            this.game.playSound(Sound.FIREWORK_LAUNCH, pitch = 1.2f)
             this.game.audiences { it.clearTitle() }
 
             this.game.state = GameState.Playing

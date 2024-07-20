@@ -240,8 +240,8 @@ class GameStopTask(
             if (terminationReason.isNotBlank())
             {
                 game.sendMessage(
-                    "${CC.B_RED}✗ ${CC.RED}Your match was terminated!",
-                    "${CC.RED}Reason: ${CC.WHITE}$terminationReason",
+                    " ${CC.B_RED}✗ ${CC.RED}Your match was terminated!",
+                    " ${CC.RED}Reason: ${CC.WHITE}$terminationReason",
                     ""
                 )
             }
@@ -256,7 +256,9 @@ class GameStopTask(
 
                             if (feedback.isNotEmpty())
                             {
-                                feedback.forEach(player::sendMessage)
+                                Tasks.delayed(10L) {
+                                    feedback.forEach(player::sendMessage)
+                                }
                             }
                         }
                 }

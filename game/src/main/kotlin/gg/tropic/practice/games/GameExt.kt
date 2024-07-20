@@ -12,6 +12,8 @@ import net.evilblock.cubed.nametag.NametagHandler
 import net.evilblock.cubed.util.CC
 import net.evilblock.cubed.util.bukkit.Constants
 import net.evilblock.cubed.visibility.VisibilityHandler
+import org.bukkit.Material
+import org.bukkit.block.BlockFace
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue
@@ -37,10 +39,13 @@ fun PracticeProfile.useKitStatistics(
     }
 }
 
-fun GameImpl.resetPlayerForFight(player: Player)
+fun GameImpl.resetPlayerForFight(player: Player, noUpdateVisibility: Boolean = false)
 {
-    VisibilityHandler.update(player)
-    NametagHandler.reloadPlayer(player)
+    if (!noUpdateVisibility)
+    {
+        VisibilityHandler.update(player)
+        NametagHandler.reloadPlayer(player)
+    }
 
     player.apply {
         isFlying = false
@@ -102,9 +107,12 @@ fun GameImpl.enterSpectatorAfterLifeEnd(player: Player)
     }
 }
 
-fun GameImpl.prepareForNewLife(player: Player)
+fun GameImpl.prepareForNewLife(player: Player, noUpdateVisibility: Boolean = false)
 {
-    player.removeMetadata("spectator", plugin)
+    if (!noUpdateVisibility)
+    {
+        player.removeMetadata("spectator", plugin)
+    }
 
     teleportToSpawnLocation(player)
     resetPlayerForFight(player)
@@ -118,6 +126,16 @@ fun GameImpl.teleportToSpawnLocation(player: Player)
             getTeamOf(player).side
         )!!
         .toLocation(arenaWorld!!)
+
+    if (flag(FeatureFlag.ClearIllegalBlocksOnRespawn))
+    {
+        val block = arenaWorld!!.getBlockAt(spawnLocation)
+        block.type = Material.AIR
+
+        block.getRelative(BlockFace.UP).apply {
+            type = Material.AIR
+        }
+    }
 
     player.teleport(spawnLocation)
 }

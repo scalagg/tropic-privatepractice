@@ -41,7 +41,8 @@ class FireballFeature : Listener
     fun interact(event: PlayerInteractEvent)
     {
         //check hand
-        val inHand = event.item
+        val inHand = event.item ?: return
+
         if (event.action == Action.RIGHT_CLICK_BLOCK || event.action == Action.RIGHT_CLICK_AIR)
         {
             if (inHand.type === Material.FIREBALL)

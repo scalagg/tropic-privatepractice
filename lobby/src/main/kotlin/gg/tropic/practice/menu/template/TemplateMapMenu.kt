@@ -42,7 +42,7 @@ abstract class TemplateMapMenu : PaginatedMenu()
     override fun getAllPagesButtonSlots() =
         (10..16) + (19..25) + (28..34)
 
-    override fun getPageButtonSlots() = 18 to 27
+    override fun getPageButtonSlots() = 18 to 26
 
     private val filteredMaps = MapService
         .cached()

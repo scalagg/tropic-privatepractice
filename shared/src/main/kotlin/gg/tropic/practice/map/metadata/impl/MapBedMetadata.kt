@@ -14,5 +14,6 @@ data class MapBedMetadata(
     override val id: String
 ) : AbstractMapMetadata()
 {
+    override fun report() = "Bed | $id | At $position | Facing ${orientation.name}"
     override fun getAbstractType() = MapBedMetadata::class.java
 }

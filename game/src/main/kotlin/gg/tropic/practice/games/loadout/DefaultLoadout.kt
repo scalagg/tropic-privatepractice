@@ -13,6 +13,8 @@ data class DefaultLoadout(private val kit: Kit) : SelectedLoadout
     override fun displayName() = "${CC.D_GREEN}Default"
     override fun apply(player: Player)
     {
-        kit.populateAndUpdate(player)
+        kit.populate(player)
+        player.fixInventoryBasedOnRBTeamColor()
+        player.updateInventory()
     }
 }
