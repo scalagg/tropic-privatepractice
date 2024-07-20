@@ -17,7 +17,6 @@ import gg.tropic.practice.kit.group.KitGroup
 import gg.tropic.practice.kit.group.KitGroupService
 import net.evilblock.cubed.util.CC
 import net.evilblock.cubed.util.bukkit.FancyMessage
-import net.evilblock.cubed.util.bukkit.ItemBuilder
 import net.md_5.bungee.api.chat.ClickEvent
 import org.bukkit.Material
 import org.bukkit.potion.PotionEffectType
@@ -605,30 +604,6 @@ object KitCommands : ScalaCommand()
                 "${CC.RED}None"
             )
         }
-    }
-
-    @Subcommand("tools golden-head")
-    @Description("Get a golden head.")
-    fun onGoldenHead(player: ScalaPlayer)
-    {
-        player.bukkit().inventory.addItem(
-            ItemBuilder
-                .of(Material.GOLDEN_APPLE)
-                .name("${CC.GOLD}Golden Head ${CC.GRAY}(Right Click)")
-                .build()
-        )
-    }
-
-    @Subcommand("tools fireball")
-    @Description("Get a fireball.")
-    fun onFireball(player: ScalaPlayer)
-    {
-        player.bukkit().inventory.addItem(
-            ItemBuilder
-                .of(Material.FIREBALL)
-                .name("${CC.GOLD}Fireball ${CC.GRAY}(Right Click)")
-                .build()
-        )
     }
 
     @AssignPermission

@@ -17,7 +17,7 @@ import org.bukkit.Bukkit
  * @since 8/4/2022
  */
 @Plugin(
-    name = "EstaPractice",
+    name = "TropicPractice",
     version = "%remote%/%branch%/%id%"
 )
 @PluginAuthor("Tropic")

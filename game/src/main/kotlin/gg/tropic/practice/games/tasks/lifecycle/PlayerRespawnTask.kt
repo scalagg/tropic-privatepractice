@@ -10,7 +10,6 @@ import me.lucko.helper.scheduler.Task
 import net.evilblock.cubed.util.CC
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import net.kyori.adventure.title.Title
 import org.bukkit.Sound
@@ -62,10 +61,7 @@ class PlayerRespawnTask(
         {
             game.prepareForNewLife(player)
 
-            GameService.audiences.player(player).apply {
-                clearTitle()
-                sendActionBar { Component.empty() }
-            }
+            GameService.audiences.player(player).clearTitle()
 
             player.sendMessage("${CC.GREEN}You have respawned!")
             player.playSound(player.location, Sound.NOTE_PLING, 1.0f, 1.0f)
@@ -90,23 +86,6 @@ class PlayerRespawnTask(
                         Duration.ofMillis(1L)
                     )
                 )
-            )
-
-            sendActionBar(
-                Component.text { text ->
-                    text.append(Component
-                        .text("Respawning in ")
-                        .color(NamedTextColor.GREEN))
-
-                    text.append(Component
-                        .text("$tick")
-                        .color(NamedTextColor.WHITE)
-                        .decorate(TextDecoration.BOLD))
-
-                    text.append(Component
-                        .text("...")
-                        .color(NamedTextColor.GREEN))
-                }
             )
         }
 
